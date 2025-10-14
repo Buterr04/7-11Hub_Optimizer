@@ -2,9 +2,9 @@ import os
 import sys
 from locations import load_default_locations, load_locations_from_file, save_locations_to_file
 from network_model import LogisticsNetwork
-from Optimizer.exhaustive_optimizer import ExhaustiveOptimizer
-from Optimizer.greedy_optimizer import GreedyOptimizer
-from Optimizer.simulated_annealing_optimizer import SimulatedAnnealingOptimizer
+from optimizers.exhaustive_optimizer import ExhaustiveOptimizer
+from optimizers.greedy_optimizer import GreedyOptimizer
+from optimizers.simulated_annealing_optimizer import SimulatedAnnealingOptimizer
 
 def clear_screen():
     """清屏"""
