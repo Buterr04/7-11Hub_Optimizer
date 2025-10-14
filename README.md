@@ -1,7 +1,7 @@
 # 7-11Hub Optimizer
 
 A comprehensive logistics network optimization tool for 7-11 convenience stores, built with clean object-oriented design and powerful optimization algorithms.
-
+[🇨🇳 中文版说明](README_CN.md)
 ## 📋 Overview
 
 This project provides an intelligent solution for optimizing 7-11's transportation and logistics network. Through a clear object-oriented approach, it separates data models, network structures, and optimization algorithms, making the system maintainable, extensible, and easy to use.
@@ -68,38 +68,13 @@ python main.py
 
 ## 📖 Usage
 
-### Basic Commands
-
-```bash
-# Load data from file
-python main.py --load data/locations.json
-
-# Run specific optimizer
-python main.py --optimizer route --algorithm genetic
-
-# Visualize results
-python main.py --load data/locations.json --optimize --visualize
-
-# Get help
-python main.py --help
-```
-
 ### Example Workflow
 
 1. **Load your location data**:
-```bash
-python main.py --load data/711_stores.json
-```
 
 2. **Run optimization**:
-```bash
-python main.py --optimizer hub --algorithm kmeans --hubs 5
-```
 
 3. **View and export results**:
-```bash
-python main.py --export results/optimized_network.json --visualize
-```
 
 ## 📊 Data Format
 
