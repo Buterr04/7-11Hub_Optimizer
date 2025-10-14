@@ -1,7 +1,10 @@
 # 7-11Hub Optimizer
+<p align="center">
+  <a href="README_CN.md">简体中文</a> ｜ <a href="README.md">English</a>
+</p>
 
 A comprehensive logistics network optimization tool for 7-11 convenience stores, built with clean object-oriented design and powerful optimization algorithms.
-[🇨🇳 中文版说明](README_CN.md)
+
 ## 📋 Overview
 
 This project provides an intelligent solution for optimizing 7-11's transportation and logistics network. Through a clear object-oriented approach, it separates data models, network structures, and optimization algorithms, making the system maintainable, extensible, and easy to use.
