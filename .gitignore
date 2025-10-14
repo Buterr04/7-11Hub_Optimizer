@@ -208,3 +208,6 @@ __marimo__/
 
 # macOS specific
 .DS_Store
+
+# App Cache
+network.png
