@@ -73,32 +73,60 @@ python main.py
 
 ### Example Workflow
 
-1. **Load your location data**:
+You can also follow the instructions in the app
 
-2. **Run optimization**:
+1. **Load your location data**
 
-3. **View and export results**:
+2. **Run optimization**
+
+3. **View and export results**
 
 ## 📊 Data Format
 
-Location data should be provided in JSON format:
+Location data can be provided in two ways: CSV (native loader) or JSON / in-code objects.
 
-```json
-{
-  "locations": [
-    {
-      "id": "store_001",
-      "name": "7-11 Main Street",
-      "type": "store",
-      "latitude": 25.0330,
-      "longitude": 121.5654,
-      "demand": 150,
-      "capacity": 200
-    },
-    ...
-  ]
-}
+1) CSV (required format for load_locations_from_file)
+- File must be UTF-8 encoded and contain a header row. The loader skips the first line.
+- Header (order must match):
+  ID,名称,类型,X坐标,Y坐标,容量,产品类别
+- Columns:
+  - ID (string)
+  - 名称 (string)
+  - 类型 (string) — one of: `manufacturer`, `wholesaler`, `store`, `supplier`, `hub`, `demander`
+  - X坐标, Y坐标 (numeric)
+  - 容量 (optional numeric; leave empty if not used)
+  - 产品类别 (optional; multiple categories separated by `;`)
+- Minimum valid row: first five columns (ID,名称,类型,X坐标,Y坐标) must exist.
+- Example:
+```csv
+ID,名称,类型,X坐标,Y坐标,容量,产品类别
+M-A,生产商A,manufacturer,1,8,1000,饮料
+W-A,批发商A,wholesaler,5,8,1500,
+S-A,711便利店A,store,8,8,,
 ```
+
+2) JSON (not used by default loader — convert to Location objects in code)
+- Example structure:
+```json
+[
+  {"id":"M-A","name":"生产商A","type":"manufacturer","x":1,"y":8,"capacity":1000,"product_categories":["饮料"]},
+  {"id":"S-A","name":"711便利店A","type":"store","x":8,"y":8}
+]
+```
+
+3) Programmatic (recommended for tests / examples)
+- Directly construct Location objects in Python and pass the list to downstream code:
+```python
+from Python.locations import Location
+locations = [
+    Location('M-A','生产商A','manufacturer',1,8,capacity=1000,product_categories=['饮料']),
+    Location('S-A','711便利店A','store',8,8)
+]
+```
+
+Notes
+- The CSV loader expects the exact column order and UTF-8 encoding. If file parsing fails or file is empty, the project falls back to a built-in default dataset.
+
 
 ## 🎨 Visualization
 
@@ -114,24 +142,18 @@ The system generates various visualizations:
 
 ```
 7-11Hub_Optimizer/
-├── src/
-│   ├── models/
-│   │   ├── location.py          # Location data model
-│   │   └── logistics_network.py # Network model
-│   ├── optimizers/
-│   │   ├── base_optimizer.py    # Abstract optimizer base class
-│   │   ├── route_optimizer.py   # Route optimization algorithms
-│   │   ├── hub_optimizer.py     # Hub location algorithms
-│   │   └── cost_optimizer.py    # Cost minimization algorithms
-│   ├── utils/
-│   │   ├── data_loader.py       # Data loading utilities
-│   │   └── visualizer.py        # Visualization functions
-│   └── cli.py                   # Command-line interface
-├── data/                        # Sample data files
-├── tests/                       # Unit tests
-├── main.py                      # Main entry point
-├── requirements.txt             # Python dependencies
-└── README.md                    # This file
+├── Python/
+│   ├── locations.py                          *location definitions
+│   ├── main.py                               *main entrypoint
+│   ├── network_model.py                      *logistics network model
+│   └── optimizers/
+│       ├── exhaustive_optimizer.py           *exhaustive search
+│       ├── greedy_optimizer.py               *greedy algorithm
+│       └── simulated_annealing_optimizer.py  *simulated annealing
+├── requirements.txt                          *project dependencies
+├── LICENSE
+├── README.md                                 *English readme (this file)
+└── README_CN.md                              *Chinese readme
 ```
 
 ### Adding New Optimizers
