@@ -6,7 +6,6 @@ A comprehensive logistics network optimization tool for 7-11 convenience stores,
 
 This project provides an intelligent solution for optimizing 7-11's transportation and logistics network. Through a clear object-oriented approach, it separates data models, network structures, and optimization algorithms, making the system maintainable, extensible, and easy to use.
 
-**这个项目通过面向对象的方式，清晰地将数据（Location）、模型（LogisticsNetwork）和算法（各种 Optimizer）分离开来。用户可以通过一个简单的命令行界面与系统交互，加载数据，运行复杂的优化算法，并最终得到一个优化的物流网络方案以及可视化的结果。**
 
 ## 🏗️ Architecture
 
