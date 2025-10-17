@@ -1,0 +1,12 @@
+ID,名称,类型,X坐标,Y坐标,容量,产品类别
+M-A,生产商A,manufacturer,1,8,1000,饮料
+M-B,生产商B,manufacturer,2,9,1200,食品
+M-C,生产商C,manufacturer,3,7,800,生活用品
+W-A,中转点A,wholesaler,5,8,1500,
+W-B,中转点B,wholesaler,6,9,1800,
+W-C,中转点C,wholesaler,4,7,1200,
+W-D,中转点D,wholesaler,3,8,
+W-E,中转点E,wholesaler,7,2,
+S-A,711便利店A,store,8,8,,
+S-B,711便利店B,store,9,9,,
+S-C,711便利店C,store,7,7,,
