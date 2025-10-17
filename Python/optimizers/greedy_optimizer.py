@@ -1,7 +1,9 @@
+from itertools import combinations
 from network_model import LogisticsNetwork
 
 class GreedyOptimizer:
     """使用贪心算法优化物流网络"""
+    TARGET_WHOLESALER_COUNT = 3
     
     @staticmethod
     def optimize(network):
@@ -12,14 +14,38 @@ class GreedyOptimizer:
         # 确保距离矩阵已计算
         if not network.distance_matrix:
             network.calculate_distances()
-        
-        # 优化生产商和批发商的配对
-        GreedyOptimizer._optimize_manufacturer_wholesaler_pairs(network)
-        
-        # 优化批发商到便利店的分配
-        GreedyOptimizer._optimize_wholesaler_store_assignments(network)
-        
-        return network
+
+        if len(network.wholesalers) < GreedyOptimizer.TARGET_WHOLESALER_COUNT:
+            raise ValueError("批发商数量不足，无法选择三个最优批发商")
+
+        if len(network.manufacturers) != GreedyOptimizer.TARGET_WHOLESALER_COUNT:
+            raise ValueError("当前实现要求存在三个生产商，以便与三个批发商配对")
+
+        optimized_network = GreedyOptimizer._select_best_wholesalers(network)
+        if optimized_network is None:
+            raise RuntimeError("无法选出最优的批发商组合")
+
+        return optimized_network
+
+    @staticmethod
+    def _select_best_wholesalers(network):
+        """从所有批发商中选择三个使总距离最小"""
+        best_network = None
+        best_distance = float('inf')
+
+        for wholesaler_subset in combinations(network.wholesalers, GreedyOptimizer.TARGET_WHOLESALER_COUNT):
+            candidate_network = network.create_filtered_network(wholesaler_subset)
+
+            GreedyOptimizer._optimize_manufacturer_wholesaler_pairs(candidate_network)
+            GreedyOptimizer._optimize_wholesaler_store_assignments(candidate_network)
+            candidate_network.update_delivery_paths()
+
+            total_distance = candidate_network.calculate_total_network_distance()
+            if total_distance < best_distance:
+                best_distance = total_distance
+                best_network = candidate_network
+
+        return best_network
     
     @staticmethod
     def _optimize_manufacturer_wholesaler_pairs(network):
