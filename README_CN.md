@@ -1,4 +1,7 @@
-# 7-11Hub 优化器
+# 7-11Hub 路线优化
+<p align="center">
+  <a href="README_CN.md">简体中文</a> ｜ <a href="README.md">English</a>
+</p>
 
 一个为 7-11 便利店打造的综合物流网络优化工具，采用清晰的面向对象设计和强大的优化算法。
 
@@ -77,9 +80,8 @@ python main.py
 
 ## 📊 数据格式
 
-位置数据可通过 CSV、JSON 或内置 Python 对象提供。
+位置数据可通过 CSV 文件提供。
 
-1）CSV（当前默认加载方式）
 - 文件须为 UTF-8 编码且包含标题行（加载时会跳过第一行）。
 - 标题行（顺序固定）：
   ID,名称,类型,X坐标,Y坐标,容量,产品类别
@@ -99,32 +101,13 @@ W-A,批发商A,wholesaler,5,8,1500,
 S-A,711便利店A,store,8,8,,
 ```
 
-2）JSON（需在代码中解析并转换为 Location 对象）
-- 示例：
-```json
-[
-  {"id":"M-A","name":"生产商A","type":"manufacturer","x":1,"y":8,"capacity":1000,"product_categories":["饮料"]},
-  {"id":"S-A","name":"711便利店A","type":"store","x":8,"y":8}
-]
-```
-
-3）程序内构造（适用于测试）
-- 直接创建 Location 列表：
-```python
-from Python.locations import Location
-locations = [
-    Location('M-A','生产商A','manufacturer',1,8,capacity=1000,product_categories=['饮料']),
-    Location('S-A','711便利店A','store',8,8)
-]
-```
-
 ## 🎨 可视化
 
 系统可生成多种可视化内容：
 - **网络地图**：地理位置与路线展示
 - **路线图**：优化后的配送路线
-- **性能指标**：优化提升的图表
-- **对比图**：优化前后对比
+- **性能指标**：优化提升的图表 （todo）
+- **对比图**：优化前后对比 （todo）
 
 ## 🛠️ 开发
 
@@ -148,6 +131,8 @@ locations = [
 ```
 
 ### 添加新优化器
+
+todo：
 
 添加新优化器步骤：
 
@@ -217,4 +202,4 @@ python -m pytest --cov=src tests/
 
 ---
 
-**用 ❤️ 优化 7-11 物流网络**
+**Made With ❤️ 优化 7-11 物流网络**

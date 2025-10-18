@@ -83,9 +83,9 @@ You can also follow the instructions in the app
 
 ## 📊 Data Format
 
-Location data can be provided in two ways: CSV (native loader) or JSON / in-code objects.
+Location data can only be provided in CSV files.
 
-1) CSV (required format for load_locations_from_file)
+CSV
 - File must be UTF-8 encoded and contain a header row. The loader skips the first line.
 - Header (order must match):
   ID,名称,类型,X坐标,Y坐标,容量,产品类别
@@ -104,28 +104,6 @@ M-A,生产商A,manufacturer,1,8,1000,饮料
 W-A,批发商A,wholesaler,5,8,1500,
 S-A,711便利店A,store,8,8,,
 ```
-
-2) JSON (not used by default loader — convert to Location objects in code)
-- Example structure:
-```json
-[
-  {"id":"M-A","name":"生产商A","type":"manufacturer","x":1,"y":8,"capacity":1000,"product_categories":["饮料"]},
-  {"id":"S-A","name":"711便利店A","type":"store","x":8,"y":8}
-]
-```
-
-3) Programmatic (recommended for tests / examples)
-- Directly construct Location objects in Python and pass the list to downstream code:
-```python
-from Python.locations import Location
-locations = [
-    Location('M-A','生产商A','manufacturer',1,8,capacity=1000,product_categories=['饮料']),
-    Location('S-A','711便利店A','store',8,8)
-]
-```
-
-Notes
-- The CSV loader expects the exact column order and UTF-8 encoding. If file parsing fails or file is empty, the project falls back to a built-in default dataset.
 
 
 ## 🎨 Visualization
