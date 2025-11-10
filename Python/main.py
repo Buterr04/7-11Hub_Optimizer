@@ -71,31 +71,6 @@ def print_optimization_results(network, algorithm_name, execution_time=None):
             distance = network.distance_matrix[m_id][w_id]
             print(f"{m_name} -> {w_name}, 曼哈顿距离: {distance:.2f}")
     
-    print("\n便利店-批发商分配:")
-    for s_id, w_ids in network.wholesaler_store_assignments.items():
-        s_name = network.locations[s_id].name
-        for w_id in w_ids:
-            w_name = network.locations[w_id].name
-            distance = network.distance_matrix[w_id][s_id]
-            print(f"{s_name} <- {w_name}, 曼哈顿距离: {distance:.2f}")
-
-    if getattr(network, "store_delivery_paths", None):
-        print("\n完整配送路径:")
-        for store_id, path_infos in network.store_delivery_paths.items():
-            store_name = network.locations[store_id].name
-            for path_info in path_infos:
-                manufacturer_id = path_info.get('manufacturer_id')
-                wholesaler_id = path_info.get('wholesaler_id')
-                manufacturer_name = network.locations[manufacturer_id].name if manufacturer_id else '未知生产商'
-                wholesaler_name = network.locations[wholesaler_id].name if wholesaler_id else '未知批发商'
-                mw_distance = path_info.get('segment_distances', {}).get('manufacturer_to_wholesaler', 0.0)
-                ws_distance = path_info.get('segment_distances', {}).get('wholesaler_to_store', 0.0)
-                total_path_distance = path_info.get('total_distance', mw_distance + ws_distance)
-                print(
-                    f"{manufacturer_name} -> {wholesaler_name} -> {store_name}, "
-                    f"曼哈顿距离: {mw_distance:.2f} + {ws_distance:.2f} = {total_path_distance:.2f}"
-                )
-    
     total_distance = network.calculate_total_network_distance()
     print(f"\n总曼哈顿距离: {total_distance:.2f}")
     print("-" * 60)
@@ -243,20 +218,16 @@ def main():
                 print(f"中转点到末端节点运输成本: {best_solution['store_cost']:.2f}")
                 print(f"总成本: {best_solution['total_cost']:.2f}")
 
-                print("\n供应商-中转点连接:")
-                for supplier_id in network.manufacturers:
-                    supplier_name = network.locations[supplier_id].name
-                    for hub_id in best_solution['active_hubs']:
-                        hub_name = network.locations[hub_id].name
-                        distance = network._ensure_distance(supplier_id, hub_id)
-                        print(f"{supplier_name} -> {hub_name}, 曼哈顿距离: {distance:.2f}")
-
-                print("\n便利店分配方案:")
-                for store_id, hub_id in best_solution['store_assignments'].items():
-                    store_name = network.locations[store_id].name
-                    hub_name = network.locations[hub_id].name
-                    distance = network._ensure_distance(hub_id, store_id)
-                    print(f"{store_name} <- {hub_name}, 曼哈顿距离: {distance:.2f}")
+                hub_filename = input("\n请输入保存中转点的文件名 (默认: optimized_hubs.csv): ") or "optimized_hubs.csv"
+                hub_locations = [
+                    network.locations[hub_id]
+                    for hub_id in best_solution['active_hubs']
+                    if hub_id in network.locations
+                ]
+                if hub_locations:
+                    save_locations_to_file(hub_locations, hub_filename)
+                else:
+                    print("未找到可保存的中转点数据")
 
                 # 更新网络状态以便可视化使用
                 network.manufacturer_wholesaler_pairs = {
