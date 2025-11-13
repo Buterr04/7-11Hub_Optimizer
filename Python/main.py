@@ -170,8 +170,8 @@ def main():
                         hub_df = pd.DataFrame(
                             {
                                 "序号": [loc.id for loc in hub_locations],
-                                "横坐标(X)": [loc.x for loc in hub_locations],
-                                "纵坐标(Y)": [loc.y for loc in hub_locations],
+                                "横坐标 (X)": [loc.x for loc in hub_locations],
+                                "纵坐标 (Y)": [loc.y for loc in hub_locations],
                             }
                         )
                         hub_df.to_excel(hub_filename, index=False)

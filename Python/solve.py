@@ -32,26 +32,50 @@ plt.rcParams['axes.unicode_minus'] = False    # 解决负号显示问题
 def create_data_model():
     """创建问题数据"""
     data = {}
-    # 从Excel文件读取数据
     try:
         # 读取仓库坐标
         warehouse_df = pd.read_excel('optimized_hubs.xlsx')
         warehouse_coords = list(zip(warehouse_df['横坐标 (X)'], warehouse_df['纵坐标 (Y)']))
-        
-        # 读取节点坐标和需求
-        node_df = pd.read_excel('sellers.xlsx')
-        
-        # 处理空值和无效数据
-        if node_df['需求'].isna().any():
-            print("警告：节点需求数据包含空值，已自动填充为0")
-            node_df['需求'] = node_df['需求'].fillna(0)
-   
-            
-        data['coordinates'] = warehouse_coords + list(zip(node_df['横坐标 (X)'], node_df['纵坐标 (Y)']))
-        data['demands'] = [0]*len(warehouse_coords) + node_df['需求'].fillna(0).astype(float).tolist() 
-        
-        print(f"读取到{len(warehouse_coords)}个仓库和{len(node_df)}个节点的数据")
-        
+
+        # 读取车辆信息
+        car_df = pd.read_excel('car.xlsx')
+        data['vehicle_capacities'] = car_df['容量'].astype(float).tolist()
+        data['num_vehicles'] = len(car_df)
+
+        # 从 locations.csv 中提取所有 store 节点
+        locations_df = pd.read_csv('locations.csv', encoding='utf-8')
+        type_series = locations_df['类型'].astype(str).str.lower()
+        store_df = locations_df[type_series == 'store'].copy()
+        if store_df.empty:
+            raise ValueError('locations.csv 未找到类型为 store 的节点')
+
+        # 坐标和需求转换
+        store_df['X坐标'] = pd.to_numeric(store_df['X坐标'], errors='coerce')
+        store_df['Y坐标'] = pd.to_numeric(store_df['Y坐标'], errors='coerce')
+
+        demand_column = '需求' if '需求' in store_df.columns else '容量'
+        store_df[demand_column] = pd.to_numeric(store_df[demand_column], errors='coerce')
+        store_df[demand_column] = store_df[demand_column].fillna(0.0)
+
+        if store_df[['X坐标', 'Y坐标']].isna().any().any():
+            raise ValueError('locations.csv 中存在坐标缺失的 store 节点')
+
+        store_coords = list(zip(store_df['X坐标'], store_df['Y坐标']))
+        store_demands = store_df[demand_column].tolist()
+
+        if all(demand == 0 for demand in store_demands):
+            print('警告：所有便利店节点的需求为0，请确认 locations.csv 中的容量/需求配置。')
+
+        # 组合坐标与需求
+        data['coordinates'] = warehouse_coords + store_coords
+        data['demands'] = [0.0] * len(warehouse_coords) + store_demands
+
+        # 记录仓库与门店索引映射
+        data['depots'] = list(range(len(warehouse_coords)))
+        data['store_ids'] = store_df['ID'].tolist()
+
+        print(f"读取到{len(warehouse_coords)}个仓库和{len(store_df)}个便利店节点的数据")
+
         # 计算曼哈顿距离矩阵
         data['distance_matrix'] = []
         for i in range(len(data['coordinates'])):
@@ -62,27 +86,18 @@ def create_data_model():
                 distance = abs(x1 - x2) + abs(y1 - y2)
                 row.append(distance)
             data['distance_matrix'].append(row)
-        
-        # 车辆容量
-        data['vehicle_capacities'] = [90, 90, 90, 90, 90, 90]  
-        
-        # 车辆数量
-        data['num_vehicles'] = 6
-        
-        # 仓库位置索引列表
-        data['depots'] = list(range(len(warehouse_coords)))
-        
+
         # 配送单价（元/吨·公里）
-        data['unit_price'] =3 # 假设每吨每公里价格
-        
+        data['unit_price'] = 3  # 假设每吨每公里价格
+
         # 车辆固定使用成本（元）
         data['vehicle_fixed_cost'] = 500
-        
-        print("成功从Excel文件导入数据")
-        
+
+        print('成功从文件导入数据')
+
     except Exception as e:
-        print(f"读取Excel文件失败: {e}")
-      
+        print(f"读取输入数据失败: {e}")
+
     return data
 
 def split_route(data, route, depot_index=0, max_vehicles=None, reorder_by_angle=False):
