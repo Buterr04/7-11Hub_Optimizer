@@ -15,24 +15,6 @@ def load_default_locations():
     """默认从 locations.csv 加载地点数据"""
     return load_locations_from_file("locations.csv")
 
-def load_hub_spoke_locations():
-    """加载集线器-辐射模型的地点数据"""
-    locations = []
-    
-    # 添加供应地
-    locations.append(Location('S1', '供应地1', 'supplier', 1, 6))
-    locations.append(Location('S2', '供应地2', 'supplier', 1, 5))
-    locations.append(Location('S3', '供应地3', 'supplier', 1, 4))
-    
-    # 添加中转节点
-    locations.append(Location('H1', '中转节点', 'hub', 5, 5))
-    
-    # 添加需求地
-    locations.append(Location('D1', '需求地1', 'demander', 9, 6))
-    locations.append(Location('D2', '需求地2', 'demander', 9, 5))
-    locations.append(Location('D3', '需求地3', 'demander', 9, 4))
-    
-    return locations
 
 def load_locations_from_file(filename):
     """从文件加载地点数据"""

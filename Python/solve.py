@@ -35,7 +35,7 @@ def create_data_model():
     # 从Excel文件读取数据
     try:
         # 读取仓库坐标
-        warehouse_df = pd.read_excel('hubs.xlsx')
+        warehouse_df = pd.read_excel('optimized_hubs.xlsx')
         warehouse_coords = list(zip(warehouse_df['横坐标 (X)'], warehouse_df['纵坐标 (Y)']))
         
         # 读取节点坐标和需求
@@ -143,6 +143,53 @@ def split_route(data, route, depot_index=0, max_vehicles=None, reorder_by_angle=
             return None
 
     return vehicle_routes
+
+
+def build_vehicle_plan(data, depot_routes):
+    """为所有仓库构建车辆执行计划，确保总车辆数不超过全局上限"""
+    total_vehicles = 0
+    plan = {}
+
+    for depot in sorted(depot_routes.keys()):
+        route = depot_routes[depot]
+        vehicle_routes = split_route(data, route, depot)
+        if vehicle_routes is None:
+            return None
+
+        total_vehicles += len(vehicle_routes)
+        if total_vehicles > data['num_vehicles']:
+            return None
+
+        plan[depot] = [(depot_idx, vr.copy()) for depot_idx, vr in vehicle_routes]
+
+    return plan
+
+
+def clone_vehicle_plan(plan):
+    """深拷贝车辆执行计划，避免后续操作影响原始记录"""
+    return {
+        depot: [(depot_idx, route.copy()) for depot_idx, route in routes]
+        for depot, routes in plan.items()
+    }
+
+
+def evaluate_solution(data, depot_routes):
+    """评估给定仓库-节点分配的成本，若违反车辆上限则返回None"""
+    plan = build_vehicle_plan(data, depot_routes)
+    if plan is None:
+        return None, None
+
+    total_cost = 0
+    for depot, vehicle_routes in plan.items():
+        depot_cost = calculate_route_cost(data, vehicle_routes)
+        vehicle_cost = len(vehicle_routes) * data['vehicle_fixed_cost']
+
+        if has_crossing_paths_simple(data, vehicle_routes):
+            depot_cost += 20000
+
+        total_cost += depot_cost + vehicle_cost
+
+    return total_cost, plan
 
 def split_by_angle_simple(data, route, depot_index=0):
     """基于角度将节点分配到不同区域，智能分组避免交叉
@@ -291,15 +338,9 @@ def generate_neighbor_solution(current_solution, data, attempts=50):
                 j = random.randrange(i + 1, len(neighbor[d]))
                 neighbor[d][i:j+1] = list(reversed(neighbor[d][i:j+1]))
 
-        # 可行性验证：对每个仓库尝试 split_route
-        feasible = True
-        for depot, route in neighbor.items():
-            vr = split_route(data, route, depot)
-            if vr is None:
-                feasible = False
-                break
-
-        if feasible:
+        # 可行性验证：需满足容量及全局车辆上限
+        plan = build_vehicle_plan(data, neighbor)
+        if plan is not None:
             return neighbor
 
     return None
@@ -339,43 +380,23 @@ def solve_cvrp():
         node_angles.sort(key=lambda x: x[1])
         current_solution[depot] = [node for node, _ in node_angles]
     
-    # 评估初始解
-    current_cost = 0
     best_solution = {}
-    best_cost = float('inf')
-    
-    # 评估初始解，若不可行尝试放宽每仓库车辆数进行修复
-    current_cost = 0
-    infeasible = False
-    for depot, route in current_solution.items():
-        vehicle_routes = split_route(data, route, depot)
-        if vehicle_routes is None:
-            # 尝试放宽车辆上限到节点数量（修复初始解）
-            vehicle_routes = split_route(data, route, depot, max_vehicles=max(1, len(route)))
-            if vehicle_routes is None:
-                infeasible = True
-                break
+    best_plan = {}
+    current_cost, current_plan = evaluate_solution(data, current_solution)
 
-        # 计算总成本（考虑载重影响）
-        depot_cost = calculate_route_cost(data, vehicle_routes)
+    if current_plan is None:
+        # 尝试通过邻域扰动修复初始解
+        repaired = generate_neighbor_solution(current_solution, data, attempts=1000)
+        if repaired is not None:
+            current_solution = {d: r.copy() for d, r in repaired.items()}
+            current_cost, current_plan = evaluate_solution(data, current_solution)
 
-        # 车辆使用成本
-        vehicle_cost = len(vehicle_routes) * data['vehicle_fixed_cost']
-
-        # 交叉惩罚
-        if has_crossing_paths_simple(data, vehicle_routes):
-            depot_cost += 20000
-
-        current_cost += depot_cost + vehicle_cost
-        best_solution[depot] = route
-
-    if infeasible:
+    if current_plan is None:
         print("初始解不可行（容量/车辆限制），请检查数据或增加车辆数量。")
-        # 返回当前分配（可能部分可行），以避免后续全部跳过
-        best_cost = float('inf')
-    else:
-        best_cost = current_cost
-    
+        return {}, {}
+
+    best_solution = {depot: route.copy() for depot, route in current_solution.items()}
+    best_plan = clone_vehicle_plan(current_plan)
     best_cost = current_cost
     
     # 记录每一代的成本数据
@@ -397,31 +418,8 @@ def solve_cvrp():
                 # 无法生成有效邻域解，跳过本次尝试
                 continue
 
-            # 评估邻域解
-            neighbor_cost = 0
-            valid_solution = True
-            temp_solution = {}
-
-            for depot, route in neighbor_solution.items():
-                vehicle_routes = split_route(data, route, depot)
-                if vehicle_routes is None:
-                    valid_solution = False
-                    break
-
-                # 计算总成本（考虑载重影响）
-                depot_cost = calculate_route_cost(data, vehicle_routes)
-
-                # 车辆使用成本
-                vehicle_cost = len(vehicle_routes) * data['vehicle_fixed_cost']
-
-                # 交叉惩罚
-                if has_crossing_paths_simple(data, vehicle_routes):
-                    depot_cost += 20000
-
-                neighbor_cost += depot_cost + vehicle_cost
-                temp_solution[depot] = route
-
-            if not valid_solution:
+            neighbor_cost, neighbor_plan = evaluate_solution(data, neighbor_solution)
+            if neighbor_plan is None:
                 continue
 
             # 计算成本差
@@ -440,12 +438,14 @@ def solve_cvrp():
                     accept = True
 
             if accept:
-                current_solution = {d: r.copy() for d, r in temp_solution.items()}
+                current_solution = {d: r.copy() for d, r in neighbor_solution.items()}
+                current_plan = clone_vehicle_plan(neighbor_plan)
                 current_cost = neighbor_cost
 
                 # 更新最优解
                 if current_cost < best_cost:
                     best_solution = {depot: route.copy() for depot, route in current_solution.items()}
+                    best_plan = clone_vehicle_plan(neighbor_plan)
                     best_cost = current_cost
 
             # 记录当前迭代的成本数据
@@ -466,12 +466,11 @@ def solve_cvrp():
     total_vehicles = 0
     total_cost = 0
     
-    for depot, route in best_solution.items():
-        vehicle_routes = split_route(data, route, depot)
-        if vehicle_routes is None:
-            print(f"仓库 {depot} 无法找到可行解")
-            continue
-            
+    if not best_plan:
+        print("未找到满足车辆限制的可行解。")
+        return best_solution, best_plan
+
+    for depot, vehicle_routes in best_plan.items():
         print(f"=== 仓库 {depot} 的最优路线 ===")
         print(f"使用车辆数量: {len(vehicle_routes)}/{data['num_vehicles']}")
         
@@ -491,7 +490,7 @@ def solve_cvrp():
     print(f"总使用车辆: {total_vehicles}/{data['num_vehicles']}")
     print(f"总配送成本: {total_cost:.2f}元")
     
-    return best_solution
+    return best_solution, best_plan
 
 def has_crossing_paths_simple(data, vehicle_routes):
     "简化版交叉检测：只检查主要路径段"
@@ -565,7 +564,7 @@ def print_solution(data, vehicle_routes):
     print(f'总行驶距离: {total_distance}m')
     print(f'总配送量: {total_load}')
 
-def visualize_solution(data, solution):
+def visualize_solution(data, solution, vehicle_plan=None):
     """优化后的可视化函数，支持多仓库"""
     # 提取节点坐标
     coordinates = data['coordinates']
@@ -596,10 +595,13 @@ def visualize_solution(data, solution):
     # 绘制每辆车的路径
     vehicle_count = 0
     for depot, route in solution.items():
-        # 为当前仓库的路径生成车辆分配
-        vehicle_routes = split_route(data, route, depot)
-        if vehicle_routes is None:
-            continue
+        # 复用已构造的车辆计划，避免违反全局车辆上限
+        if vehicle_plan and depot in vehicle_plan:
+            vehicle_routes = vehicle_plan[depot]
+        else:
+            vehicle_routes = split_route(data, route, depot)
+            if vehicle_routes is None:
+                continue
             
         for route_info in vehicle_routes:
             if isinstance(route_info, tuple) and len(route_info) == 2:
@@ -766,17 +768,19 @@ def plot_sa_convergence(iteration_costs, best_costs, temperatures, iteration_cou
 
 if __name__ == '__main__':
     data = create_data_model()
-    solution = solve_cvrp()
-    
-    # 从solution中提取vehicle_routes用于打印和绘制利用率图
+    solution, vehicle_plan = solve_cvrp()
+
+    # 从最优执行计划提取车辆路径用于打印和利用率分析
     vehicle_routes = []
-    for depot, route in solution.items():
-        # 为每个仓库生成车辆路径
-        routes = split_route(data, route, depot)
-        if routes is not None:
+    if vehicle_plan:
+        for routes in vehicle_plan.values():
             for _, v_route in routes:
                 vehicle_routes.append(v_route)
-    
-    print_solution(data, vehicle_routes)
-    visualize_solution(data, solution)
-    plot_vehicle_utilization(data, vehicle_routes)
+
+    if vehicle_routes:
+        print_solution(data, vehicle_routes)
+        plot_vehicle_utilization(data, vehicle_routes)
+    else:
+        print("未生成满足条件的车辆路径，跳过打印与利用率分析。")
+
+    visualize_solution(data, solution, vehicle_plan)

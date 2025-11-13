@@ -1,10 +1,8 @@
 import os
 import sys
+import pandas as pd
 from locations import load_default_locations, load_locations_from_file, save_locations_to_file
 from network_model import LogisticsNetwork
-from optimizers.exhaustive_optimizer import ExhaustiveOptimizer
-from optimizers.greedy_optimizer import GreedyOptimizer
-from optimizers.simulated_annealing_optimizer import SimulatedAnnealingOptimizer
 from optimizers.kmeans_sa_optimizer import KMeansSimulatedAnnealingOptimizer
 
 def clear_screen():
@@ -24,12 +22,9 @@ def print_menu():
     print("2. 从文件加载地点数据")
     print("3. 保存地点数据到文件")
     print("4. 查看当前地点数据")
-    print("5. 运行穷举法优化算法")
-    print("6. 运行贪心算法优化")
-    print("7. 运行模拟退火算法优化")
-    print("8. 运行K-means+模拟退火优化")
-    print("9. 可视化当前网络")
-    print("10. 退出")
+    print("5. 运行K-means+模拟退火优化")
+    print("6. 可视化当前网络")
+    print("7. 退出")
     print("-" * 60)
 
 def print_locations(locations):
@@ -124,64 +119,8 @@ def main():
         elif choice == '4':
             print_locations(locations)
             input("\n按Enter键继续...")
-        
+
         elif choice == '5':
-            import time
-            start_time = time.time()
-            
-            try:
-                optimized_network = ExhaustiveOptimizer.optimize(network)
-                execution_time = time.time() - start_time
-                print_optimization_results(optimized_network, "穷举法", execution_time)
-                network = optimized_network
-                locations = list(network.locations.values())
-            except Exception as e:
-                print(f"\n优化过程中出错: {e}")
-            
-            input("\n按Enter键继续...")
-        
-        elif choice == '6':
-            import time
-            start_time = time.time()
-            
-            try:
-                optimized_network = GreedyOptimizer.optimize(network)
-                execution_time = time.time() - start_time
-                print_optimization_results(optimized_network, "贪心算法", execution_time)
-                network = optimized_network
-                locations = list(network.locations.values())
-            except Exception as e:
-                print(f"\n优化过程中出错: {e}")
-            
-            input("\n按Enter键继续...")
-        
-        elif choice == '7':
-            import time
-            
-            try:
-                manufacturer_clusters = int(input("\n请输入生产商聚类数 (默认: 3): ") or 3)
-                initial_temp = float(input("\n请输入初始温度 (默认: 1000): ") or 1000)
-                cooling_rate = float(input("请输入冷却率 (0-1, 默认: 0.95): ") or 0.95)
-                iterations = int(input("请输入迭代次数 (默认: 1000): ") or 1000)
-                
-                start_time = time.time()
-                optimized_network = SimulatedAnnealingOptimizer.optimize(
-                    network,
-                    manufacturer_clusters=manufacturer_clusters,
-                    initial_temp=initial_temp,
-                    cooling_rate=cooling_rate,
-                    iterations=iterations)
-                execution_time = time.time() - start_time
-                
-                print_optimization_results(optimized_network, "模拟退火算法", execution_time)
-                network = optimized_network
-                locations = list(network.locations.values())
-            except Exception as e:
-                print(f"\n优化过程中出错: {e}")
-            
-            input("\n按Enter键继续...")
-        
-        elif choice == '8':
             import time
 
             try:
@@ -218,14 +157,27 @@ def main():
                 print(f"中转点到末端节点运输成本: {best_solution['store_cost']:.2f}")
                 print(f"总成本: {best_solution['total_cost']:.2f}")
 
-                hub_filename = input("\n请输入保存中转点的文件名 (默认: optimized_hubs.csv): ") or "optimized_hubs.csv"
+                hub_filename = (input("\n请输入保存中转点的文件名 (默认: optimized_hubs.xlsx): ") or "optimized_hubs.xlsx").strip()
+                if hub_filename and not hub_filename.lower().endswith(('.xlsx', '.xls')):
+                    hub_filename += ".xlsx"
                 hub_locations = [
                     network.locations[hub_id]
                     for hub_id in best_solution['active_hubs']
                     if hub_id in network.locations
                 ]
                 if hub_locations:
-                    save_locations_to_file(hub_locations, hub_filename)
+                    try:
+                        hub_df = pd.DataFrame(
+                            {
+                                "序号": [loc.id for loc in hub_locations],
+                                "横坐标(X)": [loc.x for loc in hub_locations],
+                                "纵坐标(Y)": [loc.y for loc in hub_locations],
+                            }
+                        )
+                        hub_df.to_excel(hub_filename, index=False)
+                        print(f"选定的中转点已保存到 {hub_filename}")
+                    except Exception as e:
+                        print(f"保存中转点数据失败: {e}")
                 else:
                     print("未找到可保存的中转点数据")
 
@@ -245,7 +197,7 @@ def main():
 
             input("\n按Enter键继续...")
 
-        elif choice == '9':
+        elif choice == '6':
             save_path = input("\n请输入保存图像的路径 (默认: network.png): ") or "network.png"
             title = input("请输入图像标题 (默认: 711便利店物流网络): ") or "711便利店物流网络"
             
@@ -256,7 +208,7 @@ def main():
             
             input("\n按Enter键继续...")
         
-        elif choice == '10':
+        elif choice == '7':
             print("\n感谢使用711便利店物流网络优化系统！")
             sys.exit(0)
         
