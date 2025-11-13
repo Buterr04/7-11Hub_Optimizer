@@ -121,20 +121,22 @@ The system generates various visualizations:
 ```
 7-11Hub_Optimizer/
 ├── Python/
-│   ├── locations.py                          *location definitions
-│   ├── main.py                               *main entrypoint
-│   ├── network_model.py                      *logistics network model
+│   ├── locations.py                          *Load location data
+│   ├── main.py                               *Main program entry point
+│   ├── slove.py                              *Terminal node optimization using Simulated Annealing
+│   ├── network_model.py                      *Logistics network modeling
 │   └── optimizers/
-│       ├── exhaustive_optimizer.py           *exhaustive search
-│       ├── greedy_optimizer.py               *greedy algorithm
-│       └── simulated_annealing_optimizer.py  *simulated annealing
-├── requirements.txt                          *project dependencies
+│       └── kmeans_sa_optimizer.py            *Front-end clustering optimizer (K-Means + SA)
+├── requirements.txt                          *Python dependencies
+├── locations.csv                             *Sample location dataset
+├── optimized_hubs.csv                        *Optimized hub results
+├── car.xlsx                                  *Vehicle information data
 ├── LICENSE
-├── README.md                                 *English readme (this file)
-└── README_CN.md                              *Chinese readme
+├── README.md                                 *Main English documentation
+└── README_CN.md                              *Chinese translation of the README
 ```
 
-### Adding New Optimizers
+### todo：Adding New Optimizers
 
 To add a new optimizer:
 
