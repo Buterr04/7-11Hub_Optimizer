@@ -211,3 +211,6 @@ __marimo__/
 
 # App Cache
 network.png
+
+# Virtual Python
+.conda

@@ -9,8 +9,6 @@ def set_matplotlib_chinese_font_to_pingfang():
     # 字体路径
     pingfang_path = "/System/Library/Fonts/Hiragino Sans GB.ttc"
 
-    if not os.path.exists(pingfang_path):
-        raise FileNotFoundError("找不到字体文件，请检查路径。")
 
     # 创建字体对象
     font_prop = FontProperties(fname=pingfang_path)
@@ -24,7 +22,7 @@ def set_matplotlib_chinese_font_to_pingfang():
     print(f"matplotlib 已设置为中文字体：{font_prop.get_name()}")
 
 
-set_matplotlib_chinese_font_to_pingfang()
+# set_matplotlib_chinese_font_to_pingfang()
 
 class LogisticsNetwork:
     """物流网络基础类"""
