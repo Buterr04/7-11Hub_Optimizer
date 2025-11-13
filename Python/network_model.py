@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 from matplotlib.font_manager import FontProperties
 from matplotlib import rcParams
 import os
@@ -101,11 +102,13 @@ class LogisticsNetwork:
     def add_location(self, location):
         """添加一个地点到网络中"""
         self.locations[location.id] = location
-        if location.type == 'manufacturer':
+
+        location_type = (location.type or '').lower()
+        if location_type == 'manufacturer':
             self.manufacturers.append(location.id)
-        elif location.type == 'wholesaler':
+        elif location_type == 'wholesaler':
             self.wholesalers.append(location.id)
-        elif location.type == 'store':
+        elif location_type == 'store':
             self.stores.append(location.id)
     
     def calculate_distance(self, loc1, loc2):
@@ -247,29 +250,28 @@ class LogisticsNetwork:
                 plt.scatter(location.x, location.y, color='red', s=100, marker='o')
                 plt.text(location.x, location.y + 0.1, location.name, ha='center')
         
-        # 绘制生产商到批发商的连接
+        # 绘制生产商到批发商的连接（欧式直线）
         for manufacturer_id, wholesaler_id in self._iter_manufacturer_wholesaler_pairs():
             m_loc = self.locations[manufacturer_id]
             w_loc = self.locations[wholesaler_id]
-            plt.plot([m_loc.x, w_loc.x], [m_loc.y, m_loc.y], 'b-', linewidth=2)
-            plt.plot([w_loc.x, w_loc.x], [m_loc.y, w_loc.y], 'b-', linewidth=2)
+            # 使用欧氏距离绘制直线并标注距离
+            plt.plot([m_loc.x, w_loc.x], [m_loc.y, w_loc.y], 'b-', linewidth=2)
             midpoint_x = (m_loc.x + w_loc.x) / 2
             midpoint_y = (m_loc.y + w_loc.y) / 2
-            manhattan_distance = abs(m_loc.x - w_loc.x) + abs(m_loc.y - w_loc.y)
-            plt.text(midpoint_x, midpoint_y + 0.1, f"{manhattan_distance:.1f}", color='blue', fontsize=8, ha='center')
+            euclidean_distance = math.hypot(m_loc.x - w_loc.x, m_loc.y - w_loc.y)
+            plt.text(midpoint_x, midpoint_y + 0.1, f"{euclidean_distance:.1f}", color='blue', fontsize=8, ha='center')
         
-        # 绘制批发商到便利店的连接
+        # 绘制批发商到便利店的连接（欧式直线）
         for store_id, wholesalers in self.wholesaler_store_assignments.items():
             s_loc = self.locations[store_id]
             for wholesaler_id in wholesalers:
                 w_loc = self.locations[wholesaler_id]
-                # 使用折线体现曼哈顿路径
-                plt.plot([w_loc.x, w_loc.x], [w_loc.y, s_loc.y], 'g--', linewidth=1.5)
-                plt.plot([w_loc.x, s_loc.x], [s_loc.y, s_loc.y], 'g--', linewidth=1.5)
-                midpoint_x = (w_loc.x + s_loc.x) / 2
-                midpoint_y = (w_loc.y + s_loc.y) / 2
-                manhattan_distance = abs(w_loc.x - s_loc.x) + abs(w_loc.y - s_loc.y)
-                plt.text(midpoint_x, midpoint_y + 0.1, f"{manhattan_distance:.1f}", color='green', fontsize=8, ha='center')
+            # 使用欧氏距离绘制直线并标注距离
+            plt.plot([w_loc.x, s_loc.x], [w_loc.y, s_loc.y], 'g--', linewidth=1.5)
+            midpoint_x = (w_loc.x + s_loc.x) / 2
+            midpoint_y = (w_loc.y + s_loc.y) / 2
+            euclidean_distance = math.hypot(w_loc.x - s_loc.x, w_loc.y - s_loc.y)
+            plt.text(midpoint_x, midpoint_y + 0.1, f"{euclidean_distance:.1f}", color='green', fontsize=8, ha='center')
         
         # 添加图例
         manufacturer_patch = plt.Line2D([0], [0], marker='s', color='w', markerfacecolor='blue', markersize=10, label='生产商')

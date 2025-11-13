@@ -32,7 +32,11 @@ class KMeansSimulatedAnnealingOptimizer:
 
         candidate_hubs = list(network.wholesalers)
         suppliers = list(network.manufacturers)
-        stores = list(network.stores)
+        stores = [
+            store_id
+            for store_id in network.stores
+            if getattr(network.locations.get(store_id), "type", "").lower() == "store"
+        ]
 
         if not candidate_hubs:
             raise ValueError("网络中缺少可用的中转点候选")
@@ -59,7 +63,6 @@ class KMeansSimulatedAnnealingOptimizer:
                 hub_count,
                 candidate_hubs,
                 suppliers,
-                stores,
                 unit_transport_cost,
                 initial_temp,
                 cooling_rate,
@@ -87,7 +90,6 @@ class KMeansSimulatedAnnealingOptimizer:
         hub_count: int,
         candidate_hubs: List[str],
         suppliers: List[str],
-        stores: List[str],
         unit_transport_cost: float,
         initial_temp: float,
         cooling_rate: float,
@@ -104,7 +106,6 @@ class KMeansSimulatedAnnealingOptimizer:
             for _ in range(max(1, kmeans_restarts)):
                 cluster_result = KMeansSimulatedAnnealingOptimizer._cluster_stores(
                     network,
-                    stores,
                     hub_count,
                 )
 
@@ -160,7 +161,13 @@ class KMeansSimulatedAnnealingOptimizer:
         return best_for_count
 
     @staticmethod
-    def _cluster_stores(network: LogisticsNetwork, store_ids: List[str], k: int) -> Optional[Tuple[Dict[int, List[str]], List[List[float]]]]:
+    def _cluster_stores(network: LogisticsNetwork, k: int) -> Optional[Tuple[Dict[int, List[str]], List[List[float]]]]:
+        store_ids = [
+            store_id
+            for store_id in network.stores
+            if getattr(network.locations.get(store_id), "type", "").lower() == "store"
+        ]
+
         if k <= 0 or not store_ids:
             return None
 
